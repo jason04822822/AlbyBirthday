@@ -8,12 +8,10 @@
     body {
             margin: 0;
             padding: 0;
-            /* ─── 修改這行 ─── */
-            background-image: url('bg.png'); 
-            background-size: cover;          /* 讓圖片鋪滿整個螢幕 */
-            background-position: center;     /* 圖片居中對齊 */
-            background-repeat: no-repeat;    /* 圖片不重複拼貼 */
-            /* ──────────────── */
+            background-image: url('bg.jpg'); 
+            background-size: cover;          
+            background-position: center;     
+            background-repeat: no-repeat;    
             height: 100vh;
             display: flex;
             justify-content: center;
@@ -58,30 +56,38 @@
             position: relative;
         }
 
+        /* ─── 核心修改：基本星星樣式與平時的浮動動畫 ─── */
         .star-item {
             position: absolute;
-            font-size: 24px;
-            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
-            transition: transform 0.1s;
+            width: 38px;  
+            height: auto;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
+            /* 平時沒抽獎時，讓它們微微浮動自轉，更有生命力 */
+            animation: idleFloat 3s ease-in-out infinite alternate;
         }
 
-        /* 搖晃動畫（當扭蛋機啟動時） */
-        @keyframes shake {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-5px, -5px) rotate(-3deg); }
-            20% { transform: translate(5px, 0px) rotate(3deg); }
-            30% { transform: translate(-5px, 5px) rotate(-1deg); }
-            40% { transform: translate(5px, -5px) rotate(2deg); }
-            50% { transform: translate(-5px, 0px) rotate(-2deg); }
-            60% { transform: translate(5px, 5px) rotate(1deg); }
-            70% { transform: translate(-5px, -5px) rotate(-3deg); }
-            80% { transform: translate(5px, 0px) rotate(2deg); }
-            90% { transform: translate(-5px, 5px) rotate(-1deg); }
-            100% { transform: translate(0, 0) rotate(0deg); }
+        /* 平時微動的動畫效果 */
+        @keyframes idleFloat {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(-8px) rotate(5deg); }
         }
 
+        /* ─── 核心修改：抽獎時「瘋狂亂滾彈跳」的 CSS 動畫 ─── */
+        @keyframes gachaRoll {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            15% { transform: translate(-20px, -60px) rotate(-90deg) scale(1.1); }
+            30% { transform: translate(25px, -110px) rotate(180deg) scale(0.9); }
+            45% { transform: translate(-30px, -40px) rotate(270deg) scale(1.05); }
+            60% { transform: translate(35px, -90px) rotate(90deg) scale(0.95); }
+            75% { transform: translate(-15px, -120px) rotate(360deg) scale(1.1); }
+            90% { transform: translate(20px, -30px) rotate(180deg) scale(1); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        }
+
+        /* 當 JS 為機器加上 .shaking 類別時，星星立刻切換成瘋狂亂滾動畫 */
         .shaking .star-item {
-            animation: shake 0.5s ease-in-out infinite;
+            /* 覆蓋掉原本的 idleFloat，改播 gachaRoll */
+            animation: gachaRoll 0.4s ease-in-out infinite;
         }
 
         /* 下半部：控制區與出蛋口 */
@@ -151,7 +157,7 @@
             top: 10px;
         }
 
-        /* 彈出彈跳視窗（Show 結果） */
+        /* 彈出彈跳視窗 */
         .modal {
             display: none;
             position: fixed;
@@ -185,7 +191,8 @@
         }
 
         .result-star {
-            font-size: 50px;
+            width: 80px;      
+            height: auto;
             animation: spin 2s linear infinite;
             margin-bottom: 15px;
         }
@@ -223,8 +230,7 @@
 <div class="container">
     <div class="gachapon-machine" id="machine">
         <div class="showcase">
-            <div class="star-container" id="starContainer">
-                </div>
+            <div class="star-container" id="starContainer"></div>
         </div>
 
         <div class="control-panel">
@@ -239,14 +245,13 @@
 
 <div class="modal" id="resultModal">
     <div class="modal-content">
-        <div class="result-star">⭐</div>
+        <img src="star.png" class="result-star" alt="star">
         <div class="result-text" id="resultText">恭喜獲得：???</div>
         <button class="close-btn" onclick="closeModal()">太棒了！</button>
     </div>
 </div>
 
 <script>
-    // 1. 預設好你想讓使用者抽到的 String 陣列
     const gachaResults = [
         "希望你今日順順利利 過得好好🫶🏻✨",
         "有時唔洗咁小心講嘢 擔心人地唔開心!!!😠",
@@ -259,37 +264,33 @@
         "You are not alone(^^) ",
     ];
 
-    // 2. 初始化：在櫥窗內隨機產生一些星星，製造裝滿的感覺
     const starContainer = document.getElementById('starContainer');
-    const starColors = ['#FFD700', '#FFDF00', '#FFE4B5', '#FFF700', '#F0E68C'];
     
     function initStars() {
         starContainer.innerHTML = '';
-        for (let i = 0; i < 25; i++) {
-            const star = document.createElement('div');
+        for (let i = 0; i < 18; i++) {
+            const star = document.createElement('img');
             star.className = 'star-item';
-            star.innerText = '⭐';
+            star.src = 'star.png'; 
             
-            // 隨機分佈位置
-            const posX = Math.random() * 200 + 10;
-            const posY = Math.random() * 140 + 30;
-            // 隨機角度
-            const rotate = Math.random() * 360;
+            const posX = Math.random() * 190 + 5;
+            const posY = Math.random() * 110 + 45; // 稍微下調初始位置，讓上方有空間彈跳
+            const rotate = Math.random() * 60 - 30; 
             
             star.style.left = `${posX}px`;
             star.style.top = `${posY}px`;
             star.style.transform = `rotate(${rotate}deg)`;
-            star.style.color = starColors[Math.floor(Math.random() * starColors.length)];
+            
+            // ─── 核心修改：為每隻星星隨機加上些許動畫延遲(delay)，讓它們飄浮時錯開，看起來更自然 ───
+            star.style.animationDelay = `${Math.random() * -3}s`;
             
             starContainer.appendChild(star);
         }
     }
 
-    // 執行初始化
     initStars();
 
-    // 3. 抽獎邏輯
-    let isPlaying = false; // 防止連續點擊
+    let isPlaying = false; 
 
     function drawGacha() {
         if (isPlaying) return;
@@ -299,52 +300,40 @@
         const machine = document.getElementById('machine');
         const gachaBall = document.getElementById('gachaBall');
 
-        // 重設出蛋口
         gachaBall.classList.remove('drop');
-
-        // 動作 1：旋鈕旋轉
         knob.classList.add('rotate');
 
-        // 動作 2：機器與星星開始搖晃 (延遲一點點開始，模擬機械感)
         setTimeout(() => {
-            machine.classList.add('shaking');
+            machine.classList.add('shaking'); // 這裡一加上去，CSS 就會驅動機器震動 + 星星狂滾
         }, 200);
 
-        // 動作 3：搖晃 1.5 秒後停止，扭蛋掉落
         setTimeout(() => {
             machine.classList.remove('shaking');
             knob.classList.remove('rotate');
             gachaBall.classList.add('drop');
         }, 1500);
 
-        // 動作 4：扭蛋掉落後，Show 出結果視窗
         setTimeout(() => {
-            // 隨機抽取預設的 String
             const randomIndex = Math.floor(Math.random() * gachaResults.length);
             const finalResult = gachaResults[randomIndex];
 
-            // 寫入結果並顯示 Modal
             document.getElementById('resultText').innerText = finalResult;
             
             const modal = document.getElementById('resultModal');
             modal.style.display = 'flex';
-            // 用 setTimeout 觸發 CSS transition 動畫
             setTimeout(() => modal.classList.add('show'), 10);
         }, 2100);
     }
 
-    // 4. 關閉結果視窗
     function closeModal() {
         const modal = document.getElementById('resultModal');
         modal.classList.remove('show');
         
         setTimeout(() => {
             modal.style.display = 'none';
-            // 重設出蛋口狀態，讓下一次可以再玩
             document.getElementById('gachaBall').classList.remove('drop');
             isPlaying = false;
-            // 重新洗牌一下星星的位置，感覺更有動態感
-            initStars();
+            initStars(); 
         }, 300);
     }
 </script>
