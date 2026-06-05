@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星星扭蛋機</title>
+    <style>
+    body {
+            margin: 0;
+            padding: 0;
+            /* ─── 修改這行 ─── */
+            background-image: url('bg.jpg'); 
+            background-size: cover;          /* 讓圖片鋪滿整個螢幕 */
+            background-position: center;     /* 圖片居中對齊 */
+            background-repeat: no-repeat;    /* 圖片不重複拼貼 */
+            /* ──────────────── */
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        /* 扭蛋機外殼 */
+        .gachapon-machine {
+            width: 280px;
+            height: 400px;
+            background-color: #FF6B81;
+            border-radius: 20px 20px 10px 10px;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border: 5px solid #333;
+        }
+
+        /* 上半部：透明櫥窗（裝星星） */
+        .showcase {
+            width: 240px;
+            height: 200px;
+            background-color: #E0FFFF;
+            border: 5px solid #333;
+            border-radius: 15px;
+            margin: 15px auto 0;
+            position: relative;
+            overflow: hidden;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.8) 20%, transparent 20%);
+            background-size: 20px 20px;
+        }
+
+        /* 櫥窗內的星星群 */
+        .star-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .star-item {
+            position: absolute;
+            font-size: 24px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+            transition: transform 0.1s;
+        }
+
+        /* 搖晃動畫（當扭蛋機啟動時） */
+        @keyframes shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-5px, -5px) rotate(-3deg); }
+            20% { transform: translate(5px, 0px) rotate(3deg); }
+            30% { transform: translate(-5px, 5px) rotate(-1deg); }
+            40% { transform: translate(5px, -5px) rotate(2deg); }
+            50% { transform: translate(-5px, 0px) rotate(-2deg); }
+            60% { transform: translate(5px, 5px) rotate(1deg); }
+            70% { transform: translate(-5px, -5px) rotate(-3deg); }
+            80% { transform: translate(5px, 0px) rotate(2deg); }
+            90% { transform: translate(-5px, 5px) rotate(-1deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .shaking .star-item {
+            animation: shake 0.5s ease-in-out infinite;
+        }
+
+        /* 下半部：控制區與出蛋口 */
+        .control-panel {
+            width: 100%;
+            position: absolute;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 扭蛋機旋鈕 */
+        .knob {
+            width: 60px;
+            height: 60px;
+            background-color: #FFF;
+            border: 4px solid #333;
+            border-radius: 50%;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.5s ease;
+            box-shadow: 0 4px 0 #CCC;
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 12px;
+            background-color: #333;
+            top: 50%;
+            left: 10%;
+            transform: translateY(-50%);
+            border-radius: 4px;
+        }
+
+        .knob.rotate {
+            transform: rotate(360deg);
+        }
+
+        /* 出蛋口 */
+        .exit-hole {
+            width: 70px;
+            height: 50px;
+            background-color: #333;
+            border-radius: 15px 15px 0 0;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 出來的扭蛋 */
+        .gacha-ball {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(to bottom, #FF4500 50%, #FFF 50%);
+            border: 2px solid #333;
+            position: absolute;
+            top: -40px;
+            left: 18px;
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .gacha-ball.drop {
+            top: 10px;
+        }
+
+        /* 彈出彈跳視窗（Show 結果） */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: #FFF;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: scale(0.7);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 80%;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .result-star {
+            font-size: 50px;
+            animation: spin 2s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-text {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background-color: #FF6B81;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #D84357;
+        }
+
+        .close-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #D84357;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="gachapon-machine" id="machine">
+        <div class="showcase">
+            <div class="star-container" id="starContainer">
+                </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="knob" id="knob" onclick="drawGacha()"></div>
+            
+            <div class="exit-hole">
+                <div class="gacha-ball" id="gachaBall"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="resultModal">
+    <div class="modal-content">
+        <div class="result-star">⭐</div>
+        <div class="result-text" id="resultText">恭喜獲得：???</div>
+        <button class="close-btn" onclick="closeModal()">太棒了！</button>
+    </div>
+</div>
+
+<script>
+    // 1. 預設好你想讓使用者抽到的 String 陣列
+    const gachaResults = [
+        "希望你今日順順利利 過得好好🫶🏻✨",
+        "有時唔洗咁小心講嘢 擔心人地唔開心!!!😠",
+        "訓教教主今日訓夠未!!😆",
+        "今日嘅Alby做得好好 叻女✨",
+        "上lec 係咪好悶🤧 我以前會忍唔住訓🤣",
+        "提提你記得見字飲水 健康好重要😤",
+        "有咩事 隨時可以搵我傾計～😬",
+        "🪄🪄🪄 幫你叉電🪫->🔋",
+        "You are not alone(^^) ",
+    ];
+
+    // 2. 初始化：在櫥窗內隨機產生一些星星，製造裝滿的感覺
+    const starContainer = document.getElementById('starContainer');
+    const starColors = ['#FFD700', '#FFDF00', '#FFE4B5', '#FFF700', '#F0E68C'];
+    
+    function initStars() {
+        starContainer.innerHTML = '';
+        for (let i = 0; i < 25; i++) {
+            const star = document.createElement('div');
+            star.className = 'star-item';
+            star.innerText = '⭐';
+            
+            // 隨機分佈位置
+            const posX = Math.random() * 200 + 10;
+            const posY = Math.random() * 140 + 30;
+            // 隨機角度
+            const rotate = Math.random() * 360;
+            
+            star.style.left = `${posX}px`;
+            star.style.top = `${posY}px`;
+            star.style.transform = `rotate(${rotate}deg)`;
+            star.style.color = starColors[Math.floor(Math.random() * starColors.length)];
+            
+            starContainer.appendChild(star);
+        }
+    }
+
+    // 執行初始化
+    initStars();
+
+    // 3. 抽獎邏輯
+    let isPlaying = false; // 防止連續點擊
+
+    function drawGacha() {
+        if (isPlaying) return;
+        isPlaying = true;
+
+        const knob = document.getElementById('knob');
+        const machine = document.getElementById('machine');
+        const gachaBall = document.getElementById('gachaBall');
+
+        // 重設出蛋口
+        gachaBall.classList.remove('drop');
+
+        // 動作 1：旋鈕旋轉
+        knob.classList.add('rotate');
+
+        // 動作 2：機器與星星開始搖晃 (延遲一點點開始，模擬機械感)
+        setTimeout(() => {
+            machine.classList.add('shaking');
+        }, 200);
+
+        // 動作 3：搖晃 1.5 秒後停止，扭蛋掉落
+        setTimeout(() => {
+            machine.classList.remove('shaking');
+            knob.classList.remove('rotate');
+            gachaBall.classList.add('drop');
+        }, 1500);
+
+        // 動作 4：扭蛋掉落後，Show 出結果視窗
+        setTimeout(() => {
+            // 隨機抽取預設的 String
+            const randomIndex = Math.floor(Math.random() * gachaResults.length);
+            const finalResult = gachaResults[randomIndex];
+
+            // 寫入結果並顯示 Modal
+            document.getElementById('resultText').innerText = finalResult;
+            
+            const modal = document.getElementById('resultModal');
+            modal.style.display = 'flex';
+            // 用 setTimeout 觸發 CSS transition 動畫
+            setTimeout(() => modal.classList.add('show'), 10);
+        }, 2100);
+    }
+
+    // 4. 關閉結果視窗
+    function closeModal() {
+        const modal = document.getElementById('resultModal');
+        modal.classList.remove('show');
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            // 重設出蛋口狀態，讓下一次可以再玩
+            document.getElementById('gachaBall').classList.remove('drop');
+            isPlaying = false;
+            // 重新洗牌一下星星的位置，感覺更有動態感
+            initStars();
+        }, 300);
+    }
+</script>
+
+</body>
+</html>
