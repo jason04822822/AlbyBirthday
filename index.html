@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>星星扭蛋機</title>
     <style>
-    body {
+        body {
             margin: 0;
             padding: 0;
-            background-image: url('bg.png'); 
+            background-image: url('bg.jpg'); 
             background-size: cover;          
             background-position: center;     
             background-repeat: no-repeat;    
@@ -22,25 +22,46 @@
 
         .container {
             text-align: center;
+            position: relative;
+        }
+
+        /* ─── 🛠️ 核心微調：加大 star5.png 按鈕 ─── */
+        .secret-star-btn {
+            width: 100px; /* 由 45px 加大到 65px，望落去更顯眼、比例更好看 */
+            height: auto;
+            cursor: pointer;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+            transition: transform 0.2s ease;
+            animation: floatBtn 2s ease-in-out infinite alternate;
+        }
+
+        .secret-star-btn:hover {
+            transform: scale(1.15) rotate(15deg);
+        }
+
+        @keyframes floatBtn {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-6px); }
         }
 
         /* 扭蛋機外殼 */
         .gachapon-machine {
             width: 280px;
             height: 400px;
-            background-color: #FF6B81;
+            background-color: #AEE2E6; 
             border-radius: 20px 20px 10px 10px;
             position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            border: 5px solid #333;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            border: 5px solid #4A6B70; 
         }
 
-        /* 上半部：透明櫥窗（裝星星） */
+        /* 櫥窗內改成透明背景 */
         .showcase {
             width: 240px;
             height: 200px;
-            background-color: #E0FFFF;
-            border: 5px solid #333;
+            background-color: rgba(255, 255, 255, 0.4); 
+            border: 5px solid #4A6B70;
             border-radius: 15px;
             margin: 15px auto 0;
             position: relative;
@@ -49,48 +70,62 @@
             background-size: 20px 20px;
         }
 
-        /* 櫥窗內的星星群 */
         .star-container {
             width: 100%;
             height: 100%;
             position: relative;
         }
 
-        /* ─── 核心修改：基本星星樣式與平時的浮動動畫 ─── */
-        .star-item {
+        .star-wrapper {
             position: absolute;
-            width: 38px;  
+            width: 34px;
+            height: 34px;
+            transform: rotate(var(--base-rot)); 
+            transition: transform 0.3s ease, left 0.3s ease, top 0.3s ease;
+        }
+
+        .star-img {
+            width: 100%;
             height: auto;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.15));
-            /* 平時沒抽獎時，讓它們微微浮動自轉，更有生命力 */
-            animation: idleFloat 3s ease-in-out infinite alternate;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.12));
+            animation: idleFloatOnly 3s ease-in-out infinite alternate;
         }
 
-        /* 平時微動的動畫效果 */
-        @keyframes idleFloat {
-            0% { transform: translateY(0) rotate(-5deg); }
-            100% { transform: translateY(-8px) rotate(5deg); }
+        @keyframes idleFloatOnly {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-5px); }
         }
 
-        /* ─── 核心修改：抽獎時「瘋狂亂滾彈跳」的 CSS 動畫 ─── */
-        @keyframes gachaRoll {
-            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-            15% { transform: translate(-20px, -60px) rotate(-90deg) scale(1.1); }
-            30% { transform: translate(25px, -110px) rotate(180deg) scale(0.9); }
-            45% { transform: translate(-30px, -40px) rotate(270deg) scale(1.05); }
-            60% { transform: translate(35px, -90px) rotate(90deg) scale(0.95); }
-            75% { transform: translate(-15px, -120px) rotate(360deg) scale(1.1); }
-            90% { transform: translate(20px, -30px) rotate(180deg) scale(1); }
-            100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        /* 每粒個別亂滾軌跡 */
+        @keyframes gachaRollIndividual {
+            0% { transform: translate(0, 0) rotate(var(--base-rot)) scale(1); }
+            25% { transform: translate(var(--shake-x1), var(--shake-y1)) rotate(calc(var(--base-rot) + var(--roll-deg1))) scale(1.1); }
+            50% { transform: translate(var(--shake-x2), var(--shake-y2)) rotate(calc(var(--base-rot) + var(--roll-deg2))) scale(0.9); }
+            75% { transform: translate(var(--shake-x3), var(--shake-y3)) rotate(calc(var(--base-rot) + var(--roll-deg3))) scale(1.05); }
+            100% { transform: translate(0, 0) rotate(calc(var(--base-rot) + 360deg)) scale(1); }
         }
 
-        /* 當 JS 為機器加上 .shaking 類別時，星星立刻切換成瘋狂亂滾動畫 */
-        .shaking .star-item {
-            /* 覆蓋掉原本的 idleFloat，改播 gachaRoll */
-            animation: gachaRoll 0.4s ease-in-out infinite;
+        .shaking .star-wrapper {
+            animation: gachaRollIndividual var(--speed) linear infinite;
+            animation-delay: var(--delay);
+        }
+        .shaking .star-img {
+            animation: none; 
         }
 
-        /* 下半部：控制區與出蛋口 */
+        @keyframes machineShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-3px, 2px) rotate(-1deg); }
+            40% { transform: translate(3px, -1px) rotate(1deg); }
+            60% { transform: translate(-2px, -2px) rotate(-1deg); }
+            80% { transform: translate(2px, 2px) rotate(1deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .shaking {
+            animation: machineShake 0.15s linear infinite;
+        }
+
         .control-panel {
             width: 100%;
             position: absolute;
@@ -100,17 +135,16 @@
             align-items: center;
         }
 
-        /* 扭蛋機旋鈕 */
         .knob {
             width: 60px;
             height: 60px;
             background-color: #FFF;
-            border: 4px solid #333;
+            border: 4px solid #4A6B70;
             border-radius: 50%;
             position: relative;
             cursor: pointer;
             transition: transform 0.5s ease;
-            box-shadow: 0 4px 0 #CCC;
+            box-shadow: 0 4px 0 #B2C7C9;
         }
 
         .knob::after {
@@ -118,7 +152,7 @@
             position: absolute;
             width: 80%;
             height: 12px;
-            background-color: #333;
+            background-color: #4A6B70;
             top: 50%;
             left: 10%;
             transform: translateY(-50%);
@@ -129,40 +163,38 @@
             transform: rotate(360deg);
         }
 
-        /* 出蛋口 */
         .exit-hole {
             width: 70px;
             height: 50px;
-            background-color: #333;
+            background-color: #4A6B70;
             border-radius: 15px 15px 0 0;
             margin-top: 20px;
             position: relative;
             overflow: hidden;
         }
 
-        /* 出來的扭蛋 */
         .gacha-ball {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: linear-gradient(to bottom, #FF4500 50%, #FFF 50%);
-            border: 2px solid #333;
+            width: 42px;                     
+            height: auto;
             position: absolute;
-            top: -40px;
-            left: 18px;
-            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            top: -50px;                     
+            left: 14px;                     
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            transform: rotate(0deg);
+            transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.5s ease;
         }
 
         .gacha-ball.drop {
-            top: 10px;
+            top: 6px;                       
+            transform: rotate(115deg);       
         }
 
-        /* 彈出彈跳視窗 */
+        /* 通用彈窗樣式 */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.6);
+            background-color: rgba(0,0,0,0.5);
             justify-content: center;
             align-items: center;
             z-index: 10;
@@ -180,7 +212,7 @@
             padding: 30px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             transform: scale(0.7);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-width: 80%;
@@ -197,9 +229,7 @@
             margin-bottom: 15px;
         }
 
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .result-text {
             font-size: 20px;
@@ -208,26 +238,66 @@
             margin-bottom: 20px;
         }
 
-        .close-btn {
-            background-color: #FF6B81;
-            color: white;
-            border: none;
-            padding: 10px 25px;
+        .close-btn, .submit-btn {
+            background-color: #AEE2E6;
+            color: #333;
+            border: 2px solid #4A6B70;
+            padding: 8px 25px;
             font-size: 16px;
             border-radius: 20px;
             cursor: pointer;
-            box-shadow: 0 4px 0 #D84357;
+            box-shadow: 0 4px 0 #4A6B70;
+            font-weight: bold;
+            margin: 5px;
         }
 
-        .close-btn:active {
+        .close-btn:active, .submit-btn:active {
             transform: translateY(2px);
-            box-shadow: 0 2px 0 #D84357;
+            box-shadow: 0 2px 0 #4A6B70;
+        }
+
+        .pwd-input {
+            width: 80%;
+            padding: 10px;
+            font-size: 18px;
+            border: 3px solid #4A6B70;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+            outline: none;
+            letter-spacing: 2px;
+        }
+
+        .letter-content {
+            background-color: #FFFDF2; 
+            border: 2px dashed #4A6B70;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: left; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            max-width: 320px;
+            font-family: 'Georgia', serif;
+            color: #444;
+            line-height: 1.6;
+        }
+
+        .letter-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #4A6B70;
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #AEE2E6;
+            padding-bottom: 8px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <!-- 這裡幫你把 src 改成了 star5.png 並且套用了加大後的 Class -->
+    <img src="star5.png" class="secret-star-btn" onclick="openQuestionWindow()" alt="secret-star">
+
     <div class="gachapon-machine" id="machine">
         <div class="showcase">
             <div class="star-container" id="starContainer"></div>
@@ -237,17 +307,48 @@
             <div class="knob" id="knob" onclick="drawGacha()"></div>
             
             <div class="exit-hole">
-                <div class="gacha-ball" id="gachaBall"></div>
+                <img src="star.png" class="gacha-ball" id="gachaBall" alt="gacha-star">
             </div>
         </div>
     </div>
 </div>
 
+<!-- 彈窗 1：扭蛋結果彈窗 -->
 <div class="modal" id="resultModal">
     <div class="modal-content">
-        <img src="star.png" class="result-star" alt="star">
+        <img src="star.png" class="result-star" id="resultImg" alt="star">
         <div class="result-text" id="resultText">恭喜獲得：???</div>
-        <button class="close-btn" onclick="closeModal()">太棒了！</button>
+        <button class="close-btn" onclick="closeModal('resultModal')">太棒了！</button>
+    </div>
+</div>
+
+<!-- 彈窗 2：密碼詢問彈窗 -->
+<div class="modal" id="questionModal">
+    <div class="modal-content">
+        <div class="result-text">🔒 請輸入解鎖密碼：</div>
+        <input type="text" id="pwdInput" class="pwd-input" placeholder="YYYYMMDD" maxlength="8">
+        <div>
+            <button class="submit-btn" onclick="checkPassword()">確認</button>
+            <button class="close-btn" style="background-color: #DDD; border-color: #999; box-shadow: 0 4px 0 #999;" onclick="closeModal('questionModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 彈窗 3：信件 Window 彈窗 -->
+<div class="modal" id="letterModal">
+    <div class="modal-content" style="padding: 20px;">
+        <div class="letter-content">
+            <div class="letter-title">✉️ 給 Alby 的一封信</div>
+            親愛的 Alby：<br><br>
+            祝你生日快樂！🎂✨<br>
+            希望你今日順順利利、過得開開心心！<br>
+            上 Lecture 唔好成日悶到訓教啦，哈哈！🤣<br>
+            記住要多啲飲水，好好照顧自己。不論何時，You are not alone！<br><br>
+            <span style="float: right; font-weight: bold; color: #4A6B70;">來自你的 AI 夥伴 🫶🏻</span>
+            <div style="clear: both;"></div>
+        </div>
+        <br>
+        <button class="close-btn" onclick="closeModal('letterModal')">收好信件</button>
     </div>
 </div>
 
@@ -264,27 +365,70 @@
         "You are not alone(^^) ",
     ];
 
+    const starImages = ['star.png', 'star2.png', 'star3.png', 'star4.png'];
     const starContainer = document.getElementById('starContainer');
     
     function initStars() {
         starContainer.innerHTML = '';
-        for (let i = 0; i < 18; i++) {
-            const star = document.createElement('img');
-            star.className = 'star-item';
-            star.src = 'star.png'; 
+        const containerWidth = 240;
+        const containerHeight = 200;
+        const starSize = 34; 
+        const cols = 6;
+        const rows = 5;
+        const cellWidth = containerWidth / cols;   
+        const cellHeight = 32;                     
+        const topPadding = 35;                     
+
+        let grids = [];
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                grids.push({ row: r, col: c });
+            }
+        }
+        grids.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < grids.length; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'star-wrapper';
+            const starImg = document.createElement('img');
+            starImg.className = 'star-img';
             
-            const posX = Math.random() * 190 + 5;
-            const posY = Math.random() * 110 + 45; // 稍微下調初始位置，讓上方有空間彈跳
-            const rotate = Math.random() * 60 - 30; 
+            const randomImgSrc = starImages[Math.floor(Math.random() * starImages.length)];
+            starImg.src = randomImgSrc; 
+
+            const cell = grids[i];
+            const baseX = cell.col * cellWidth;
+            const baseY = cell.row * cellHeight + topPadding; 
+
+            const offsetX = Math.random() * (cellWidth - starSize + 4);
+            const offsetY = Math.random() * (cellHeight - starSize + 4);
+
+            const posX = Math.max(2, Math.min(containerWidth - starSize - 2, baseX + offsetX));
+            const posY = Math.max(5, Math.min(containerHeight - starSize - 5, baseY + offsetY));
+            const rotate = Math.random() * 360; 
             
-            star.style.left = `${posX}px`;
-            star.style.top = `${posY}px`;
-            star.style.transform = `rotate(${rotate}deg)`;
+            wrapper.style.left = `${posX}px`;
+            wrapper.style.top = `${posY}px`;
+            wrapper.style.setProperty('--base-rot', `${rotate}deg`);
             
-            // ─── 核心修改：為每隻星星隨機加上些許動畫延遲(delay)，讓它們飄浮時錯開，看起來更自然 ───
-            star.style.animationDelay = `${Math.random() * -3}s`;
+            wrapper.style.setProperty('--roll-deg1', `${Math.random() * 180 - 90}deg`);
+            wrapper.style.setProperty('--roll-deg2', `${Math.random() * 360 - 180}deg`);
+            wrapper.style.setProperty('--roll-deg3', `${Math.random() * 540 - 270}deg`);
+            wrapper.style.setProperty('--shake-x1', `${Math.random() * 50 - 25}px`);
+            wrapper.style.setProperty('--shake-y1', `${Math.random() * -50 - 20}px`);
+            wrapper.style.setProperty('--shake-x2', `${Math.random() * 60 - 30}px`);
+            wrapper.style.setProperty('--shake-y2', `${Math.random() * -40 - 40}px`);
+            wrapper.style.setProperty('--shake-x3', `${Math.random() * 50 - 25}px`);
+            wrapper.style.setProperty('--shake-y3', `${Math.random() * -30 - 10}px`);
+
+            const randomSpeed = 0.3 + Math.random() * 0.2;
+            wrapper.style.setProperty('--speed', `${randomSpeed}s`);
+            const randomDelay = Math.random() * -0.4;
+            wrapper.style.setProperty('--delay', `${randomDelay}s`);
             
-            starContainer.appendChild(star);
+            starImg.style.animationDelay = `${Math.random() * -3}s`;
+            wrapper.appendChild(starImg);
+            starContainer.appendChild(wrapper);
         }
     }
 
@@ -299,41 +443,64 @@
         const knob = document.getElementById('knob');
         const machine = document.getElementById('machine');
         const gachaBall = document.getElementById('gachaBall');
+        const resultImg = document.getElementById('resultImg');
+
+        const luckyStar = starImages[Math.floor(Math.random() * starImages.length)];
+        gachaBall.src = luckyStar;
+        resultImg.src = luckyStar;
 
         gachaBall.classList.remove('drop');
         knob.classList.add('rotate');
 
-        setTimeout(() => {
-            machine.classList.add('shaking'); // 這裡一加上去，CSS 就會驅動機器震動 + 星星狂滾
-        }, 200);
+        setTimeout(() => { machine.classList.add('shaking'); }, 200);
 
         setTimeout(() => {
             machine.classList.remove('shaking');
             knob.classList.remove('rotate');
-            gachaBall.classList.add('drop');
+            gachaBall.classList.add('drop'); 
         }, 1500);
 
         setTimeout(() => {
             const randomIndex = Math.floor(Math.random() * gachaResults.length);
             const finalResult = gachaResults[randomIndex];
-
             document.getElementById('resultText').innerText = finalResult;
-            
-            const modal = document.getElementById('resultModal');
-            modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
+            openModal('resultModal');
         }, 2100);
     }
 
-    function closeModal() {
-        const modal = document.getElementById('resultModal');
+    function openQuestionWindow() {
+        document.getElementById('pwdInput').value = ''; 
+        openModal('questionModal');
+    }
+
+    function checkPassword() {
+        const input = document.getElementById('pwdInput').value.trim();
+        if (input === '20260610') {
+            closeModal('questionModal'); 
+            setTimeout(() => {
+                openModal('letterModal'); 
+            }, 300);
+        } else {
+            alert('密碼錯誤❌ 再試試看吧！');
+        }
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
         modal.classList.remove('show');
-        
         setTimeout(() => {
             modal.style.display = 'none';
-            document.getElementById('gachaBall').classList.remove('drop');
-            isPlaying = false;
-            initStars(); 
+            if(id === 'resultModal') {
+                document.getElementById('gachaBall').classList.remove('drop');
+                isPlaying = false;
+                initStars(); 
+            }
         }, 300);
     }
 </script>
